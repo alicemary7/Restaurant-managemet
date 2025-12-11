@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Depends
-
 # schema
 from schemas.restaurant import Restaurant_schema
 from dependencies import connect_to_db
 from sqlalchemy.orm import Session
-
 from models.restaurant import Restaurant
 
 
@@ -16,9 +14,9 @@ def get_all_restaurant(dbs:Session=Depends(connect_to_db)):
     get_all_restaurant=dbs.query(Restaurant).all()
     return get_all_restaurant
 
-@restaurant_router.get("/specific_id{id}")
-def get_restaurant_byid(id:int,dbs:Session=Depends(connect_to_db)):
-    particular_restaurant=dbs.query(Restaurant).filter(Restaurant.id==id).first()
+@restaurant_router.get("/specific_id{res_id}")
+def get_restaurant_by_id(res_id:int,dbs:Session=Depends(connect_to_db)):
+    particular_restaurant=dbs.query(Restaurant).filter(Restaurant.res_id==res_id).first()
     if not particular_restaurant:
         return {"message":"Invalid ID"}
     return particular_restaurant
@@ -31,15 +29,15 @@ def add_restaurant(new_restaurant:Restaurant_schema,dbs:Session=Depends(connect_
         location=new_restaurant.location,
         status=new_restaurant.status
     )
+    dbs.add(new_entry)
 
-    
     dbs.commit()
     dbs.refresh(new_entry)
     return {"message":"added successfully"}
 
-@restaurant_router.put("/update_restaurant/{id}")
-def update_restaurant(id:int,new_restaurant:Restaurant_schema,dbs:Session=Depends(connect_to_db)):
-    update_entry=dbs.query(Restaurant).filter(Restaurant.id==id).first()
+@restaurant_router.put("/update_restaurant/{res_id}")
+def update_restaurant(res_id:int,new_restaurant:Restaurant_schema,dbs:Session=Depends(connect_to_db)):
+    update_entry=dbs.query(Restaurant).filter(Restaurant.res_id==res_id).first()
     if not update_entry:
         return {"message":"Invalid ID"}
     
@@ -53,9 +51,9 @@ def update_restaurant(id:int,new_restaurant:Restaurant_schema,dbs:Session=Depend
     
 
 @restaurant_router.delete("/delete_restaurant/{id}")
-def delete_restaurant(id:int,new_restaurant:Restaurant_schema,dbs:Session=Depends(connect_to_db)):
-    delete_entry=dbs.query(Restaurant).filter(Restaurant.id==id).first()
-    if not delete_restaurant:
+def delete_restaurant(id:int,dbs:Session=Depends(connect_to_db)):
+    delete_entry=dbs.query(Restaurant).filter(Restaurant.res_id==id).first()
+    if not delete_entry:
         return {"message":"Invalid ID"}
     
     

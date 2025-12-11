@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-
 # schema
 from schemas.foods import Foods_schema
 from dependencies import connect_to_db
@@ -28,53 +27,55 @@ def get_all_foods(food_id: int, dbs: Session = Depends(connect_to_db)):
     return particular_food
 
 
-# POST
 @food_router.post("/")
-def get_all_foods(new_food: Foods_schema, dbs: Session = Depends(connect_to_db)):
-
-    some_food_name = new_food.food_name
-    some_price = new_food.price
-    some_qty = new_food.qty
-    something_avl = new_food.availability
-    # food new model
+def create_food(new_food: Foods_schema, dbs: Session = Depends(connect_to_db)):
+    
     new_entry = Foods(
-        food_name=some_food_name,
-        price=some_price,
-        qty=some_qty,
-        availability=something_avl,
+        food_name=new_food.food_name,
+        price=new_food.price,
+        qty=new_food.qty,
+        availability=new_food.availability,
+        res_id=new_food.res_id
     )
 
-    # adding the row
     dbs.add(new_entry)
-    # committing the row
     dbs.commit()
-    # refresh the table
     dbs.refresh(new_entry)
-    return {"message":"added successfully"}
+
+    return {"message": "added successfully", "data": new_entry}
 
 
 
 # update
 
-@food_router.put("/{food_id}")
-def update_food(food_id:int,new_food:Foods_schema,dbs:Session=Depends(connect_to_db)):
-    update_entry= dbs.query(Foods).filter(Foods.food_id==food_id).first()
+@food_router.put("/{id}")
+def update_products(id: int, changed: Foods_schema, dbs: Session = Depends(connect_to_db)):
+    food_item = dbs.query(Foods).filter(Foods.food_id == id).first()
 
-    update_entry.food_name=new_food.food_name,
-    update_entry.price=new_food.price,
-    update_entry.qty=new_food.qty,
-    update_entry.availability=new_food.availability
+    if not food_item:
+        return {"message": "Invalid id"}
 
-    
+  
+    if changed.qty > food_item.qty:
+        return {"message": "Not enough stock"}
+
+    food_item.qty = food_item.qty - changed.qty
+
+  
+    food_item.food_name = changed.food_name
+    food_item.price = changed.price
+    food_item.availability = changed.availability
+
     dbs.commit()
-    dbs.refresh(update_entry)
-    return {"message":"updated successfully"}
+    dbs.refresh(food_item)
+
+    return {"message": "updated", "data": food_item}
 
 
 # delete
 
 @food_router.delete("/{food_id}")
-def delete_food(food_id:int,new_food:Foods_schema,dbs:Session=Depends(connect_to_db)):
+def delete_food(food_id:int,dbs:Session=Depends(connect_to_db)):
     delete_entry=dbs.query(Foods).filter(Foods.food_id==food_id).first()
 
     dbs.delete(delete_entry)
